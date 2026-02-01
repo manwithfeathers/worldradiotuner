@@ -192,6 +192,7 @@ $('#countrySelect').on('change', async function() {
   
   //ajax call to return GeoJSON object when given country code, draw on map and centre to it
 	let rawGeoJSON = await ajaxCaller("libs/php/getCountryBounds.php", { id: countryId  })
+  if (!rawGeoJSON) return
   let myGeoJSON = rawGeoJSON["data"]
 		
     // remove any existing country outlines
@@ -310,7 +311,36 @@ $(document).ready( async function () {
     playRadio(appState.selectedCountry.radio)
   }) 
 
+map.on('click', async function(e) {        
+       
+      
+        let lat = e.latlng.lat
+        let lng = e.latlng.lng
+      
+      try {
+        let country =  await $.ajax({
+          url: "libs/php/getCountryFromCoords.php",
+          type: 'POST',
+          dataType: "json",
+          data: {lat: lat, lng: lng}
+        });
+        if ((!country) || !country["data"]) return
+        
+        let newCountry = country["data"]["country_code"].toUpperCase()
+       
 
+        $("#countrySelect").val(newCountry).change()
+
+
+      } catch (error) {
+          return
+      }
+     
+
+        
+       
+       
+    });
    
   
  
