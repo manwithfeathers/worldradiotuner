@@ -7,12 +7,13 @@
         $name = $feature['properties']['name'];
         trim($name);
         $code = $feature['properties']['iso_a2'];
-        $output['data'][$name] = $code;
+        $countries[$name] = $code;
     }
 
     
     
-    ksort($output);
+    ksort($countries);
+    $output["data"] = $countries;
     $output["status"]['name'] = "ok";
 	
 	echo json_encode($output); 

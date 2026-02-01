@@ -173,7 +173,6 @@ var satellite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/service
 );
 
 
-
 var basemaps = {
   
   "Satellite": satellite,
@@ -206,9 +205,6 @@ $('#countrySelect').on('change', async function() {
  
 });
  
-
-
-
 var homeBtn = L.easyButton( "fa-home", function (btn, map) {
   $("#countrySelect").val(appState.myCountry.countryCode).change()
 });
@@ -220,16 +216,7 @@ var radioBtn = L.easyButton( "fa-radio", async function (btn, map) {
     stopRadio()
     return;
   }
-
-  let result = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
   
-  if (!result) return;
-
-  appState.selectedCountry.radio = result["data"]
-
-  // this will help later to see if user has changed country
-  appState.radioLocation = appState.selectedCountry.countryCode;
-
   playRadio(appState.selectedCountry.radio)
   
 });
@@ -251,6 +238,8 @@ $(document).ready( async function () {
   map = L.map("map", {
     layers: [satellite]
   })
+
+  
 
    // initialise myCountry, selectedCountry and countrySelect based on location
   navigator.geolocation.getCurrentPosition( async (pos) => {
@@ -276,6 +265,15 @@ $(document).ready( async function () {
     }
     
     $("#countrySelect").val(appState.myCountry.countryCode).change();
+    let radios = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
+  
+    if (!radios) return;
+
+    appState.selectedCountry.radio = radios["data"]
+
+  // this will help later to see if user has changed country
+    appState.radioLocation = appState.selectedCountry.countryCode;
+    playRadio(appState.selectedCountry.radio)
     
   })
 
@@ -294,6 +292,8 @@ $(document).ready( async function () {
   		for (let key in countries) {
         $('#countrySelect').append('<option value="' + countries[key] + '">' + key + '</option>')
       }  
+  
+  
 
   $("#scanBtn").on("click", async () => {
     if (appState.radioLocation !== appState.selectedCountry.countryCode) {
@@ -302,6 +302,7 @@ $(document).ready( async function () {
       appState.selectedCountry.radio = result["data"]
     }
     playRadio(appState.selectedCountry.radio)
+     $("#radioFrame")[0].play()
   })
   
   $('audio').on('error', () => {
