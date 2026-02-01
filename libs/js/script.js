@@ -199,9 +199,15 @@ $('#countrySelect').on('change', async function() {
   if(appState.selectedCountry.geoJSON){
     appState.selectedCountry.geoJSON.clearLayers()
   }
+
+  
+
   appState.selectedCountry.geoJSON = L.geoJSON(myGeoJSON, {style: geojsonStyling})
   appState.selectedCountry.geoJSON.addTo(map);
-  map.fitBounds(appState.selectedCountry.geoJSON.getBounds());
+  map.fitBounds(appState.selectedCountry.geoJSON.getBounds(), {
+  maxZoom: 5,
+  padding: [50,50],
+});
   await countryInfo(countryId)
  
 });
@@ -237,7 +243,8 @@ $(window).on('load', function () {
 $(document).ready( async function () {
   
   map = L.map("map", {
-    layers: [satellite]
+    layers: [satellite],
+    worldCopyJump: true
   })
 
   
