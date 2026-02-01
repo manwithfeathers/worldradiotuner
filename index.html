@@ -1,0 +1,93 @@
+<!doctype html>
+
+<html lang="en">
+   <head>
+    <title>World Radio Tuner</title>
+	<meta name="description" content="World Radio Tuner">
+	<meta name="author" content="Adam Parkinson">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="stylesheet" href="libs/css/leaflet.css">
+    <link rel="stylesheet" href="libs/css/toastify.css">
+    <link rel="stylesheet" href="libs/css/MarkerCluster.Default.css">
+    <link rel="stylesheet" href="libs/css/MarkerCluster.css">
+    <link rel="stylesheet" href="libs/css/leaflet.extra-markers.min.css">
+    <link rel="stylesheet" href="libs/css/all.min.css">
+    <link rel="stylesheet" href="libs/css/bootstrap.min.css">
+    <link rel="stylesheet" href="libs/css/easy-button.css">
+   <link rel="stylesheet" href="libs/css/geosearch.css"/>
+
+
+    <link rel="stylesheet" href="libs/css/styles.css">
+    </head>
+
+    <body>
+        <div id="preloader"></div>
+        <span id="selectContainer">
+        <select value="Select a country" id="countrySelect" class="form-select shadow-sm">
+            <option></option>
+        </select>
+        </span>
+
+        <div id="map"></div>
+
+    
+        
+
+    <div id="errorModal" class="modal fade"  tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content shadow">
+            <div class="modal-header bg-dark bg-gradient text-white">
+                <h5 class="modal-title" id="errorTitle">Error</h5>
+                <button  autofocus="false" type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">  
+                <div id="errorText"></div>
+            </div>
+            <div class="modal-footer">
+                <button autofocus="false" type="button" class="btn btn-outline-success btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+            </div>
+        </div>
+    </div> 
+
+    <div id="radioPlayer" class="fixed-bottom bg-dark text-white py-2">
+            <div class="container-fluid px-2">
+
+                <div class="row align-items-center gy-2" >
+                    <div class="col-12 col-md-5">
+                        <div id="radioInfo"></div>
+                    </div>
+                    <div class="col-12 col-md-5">
+                        <audio id="radioFrame" autoplay class="w-100" controls src="">unsupported format</audio>       
+                    </div>
+                    <div class="col-12 col-md-2 text-md-end">
+                        <button type="button" autofocus="false" class="btn  btn-outline-light btn-sm w-100 w-md-auto" id="scanBtn">scan</button> 
+                    </div>
+ 
+                    
+                </div>   
+            </div>
+    </div>  
+
+    <div class="footer">
+
+    <a href="https://www.flaticon.com/free-icons/hospital" title="hospital icons">Hospital icons created by mavadee - Flaticon</a>
+    <a href="https://www.flaticon.com/free-icons/airport" title="airport icons">Airport icons created by asol_studio - Flaticon</a>
+    <a href="https://www.flaticon.com/free-icons/park" title="park icons">Park icons created by setiawanap - Flaticon</a>
+    <a href="https://www.flaticon.com/free-icons/university" title="university icons">University icons created by Andrean Prabowo - Flaticon</a>
+</div>
+    <script src="libs/js/jquery-3.7.1.min.js"></script>     
+    <script src="libs/js/leaflet.js"></script>    
+    <script src="libs/js/easy-button.js"></script>    
+    <script src="libs/js/bootstrap.bundle.min.js"></script>    
+    <script src="libs/js/leaflet.extra-markers.min.js"></script>    
+    <script src="libs/js/leaflet.markercluster.js"></script>    
+    <script src="libs/js/toastify.js"></script>    
+    <script src="libs/js/numeral.min.js"></script>
+    <script src="libs/js/date-en-GB.js"></script>
+    
+    <!-- my js -->
+    <script type="application/javascript" src="libs/js/script.js"></script>
+    </body>
+</html>
