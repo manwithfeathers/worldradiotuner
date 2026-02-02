@@ -23,6 +23,7 @@
 
 // bugs
 // n cyprus n korea  bosnia n herz
+// scan can cause error modal
 
 
 // ---------------------------------------------------------
@@ -30,6 +31,14 @@
 // ---------------------------------------------------------
 
 var map;
+
+class Preset {
+  constructor (country, station, url) {
+    this.country = country,
+    this.station = station,
+    this.url = url
+  }
+}
 
 const appState = {
   
@@ -56,7 +65,9 @@ const appState = {
     exchangeRates: null,
   },
   radioPlaying: false,
-  radioLocation: null
+  radioName: null,
+  radioLocation: null,
+  streamingUrl: null,
 }
 
 
@@ -106,6 +117,13 @@ async function ajaxCaller(url, args) {
   }  
 }
 
+function copy() {
+  let copyText = document.querySelector("#shareText");
+  copyText.select();
+  document.execCommand("copy");
+}
+
+
 
 // wrapper for ajax caller to give error messages. need to fix + improve
 
@@ -145,20 +163,28 @@ function playRadio(stationArray) {
   // filter out stations that force download and don't stream well in iframe
   let filteredArray = stationArray.filter(station => !station.url.includes("m3u"))
   let x = Math.floor(Math.random() * filteredArray.length)
-  let streamingUrl = filteredArray[x]['url'];
-  let radioName = filteredArray[x]['name']
+  appState.streamingUrl = filteredArray[x]['url'];
+  appState.radioName = filteredArray[x]['name']
   
-  $("#radioFrame").attr("src", streamingUrl)
-  $("#radioInfo").html(`Listen to ${radioName} from ${appState.selectedCountry.name}`)
+  $("#radioFrame").attr("src", appState.streamingUrl)
+  $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
   $("#radioPlayer").removeClass("d-none")
   appState.radioPlaying = true;
-  
 }
 
 function stopRadio () {
   $("#radioFrame")[0].pause()
   $("#radioPlayer").addClass("d-none")
   appState.radioPlaying = false;
+}
+
+function playPreset(preset) {
+  let {country, station, url} = preset;
+  $("#radioFrame").attr("src", url)
+  $("#radioInfo").html(`Listen to ${station} from ${country}`)
+  $("#radioPlayer").removeClass("d-none")
+  appState.radioPlaying = true;
+  
 }
 
 // tile layers
@@ -215,6 +241,32 @@ $('#countrySelect').on('change', async function() {
 var homeBtn = L.easyButton( "fa-home", function (btn, map) {
   $("#countrySelect").val(appState.myCountry.countryCode).change()
 });
+
+var presetBtn = L.easyButton("fa-floppy-o ", (btn) => {
+  let preset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl)
+  console.log(preset)
+  preset = JSON.stringify(preset)
+  localStorage.setItem("preset1", preset);
+})
+
+var recallBtn = L.easyButton("fa-heart", () => {
+  let preset = localStorage.getItem("preset1")
+  preset = JSON.parse(preset)
+  playPreset(preset)
+
+})
+
+var shareBtn = L.easyButton("fa-tree", (btn) => {
+  let params = {
+    url: appState.streamingUrl,
+    country: appState.radioLocation,
+    name: appState.radioName
+  }
+  let shareableParams = new URLSearchParams(params)
+  let link= `${window.location.origin}${window.location.pathname}?${shareableParams}`
+  $("#shareText").val(link)
+  shareModal.show()
+})
 
 
 
@@ -273,6 +325,20 @@ $(document).ready( async function () {
     }
     
     $("#countrySelect").val(appState.myCountry.countryCode).change();
+    
+    // first check if preset is shared in url 
+    const params = new URLSearchParams(window.location.search);
+
+    
+    if(params.toString()) {
+      let stationCountry = params.get("country");
+      let stationUrl = params.get("url");
+      let stationName = params.get("name")
+      let thisPreset = new Preset(stationCountry, stationName, stationUrl)
+      playPreset(thisPreset)
+      return
+      } 
+    
     let radios = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
   
     if (!radios) return;
@@ -280,18 +346,27 @@ $(document).ready( async function () {
     appState.selectedCountry.radio = radios["data"]
 
   // this will help later to see if user has changed country
-    appState.radioLocation = appState.selectedCountry.countryCode;
+    appState.radioLocation = appState.selectedCountry.name;
     playRadio(appState.selectedCountry.radio)
     
+  
+  
+  
+  
   })
+
 
   let layerControl = L.control.layers(basemaps).addTo(map);
  	
-  homeBtn.addTo(map);
+  homeBtn.addTo(map)
   radioBtn.addTo(map)
+  presetBtn.addTo(map)
+  recallBtn.addTo(map)
+  shareBtn.addTo(map)
 
 
   errorModal = new bootstrap.Modal(document.getElementById('errorModal'))
+  shareModal = new bootstrap.Modal(document.getElementById("shareModal"))
 
   // populate country select
   let rawCountries = await ajaxCaller("libs/php/populateCountrySelect.php", {})
@@ -304,10 +379,11 @@ $(document).ready( async function () {
   
 
   $("#scanBtn").on("click", async () => {
-    if (appState.radioLocation !== appState.selectedCountry.countryCode) {
+    if (appState.radioLocation !== appState.selectedCountry.name) {
       let result = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
       if (!result) return;
       appState.selectedCountry.radio = result["data"]
+      appState.radioLocation = appState.selectedCountry.name;
     }
     playRadio(appState.selectedCountry.radio)
      $("#radioFrame")[0].play()
@@ -318,7 +394,11 @@ $(document).ready( async function () {
     playRadio(appState.selectedCountry.radio)
   }) 
 
-map.on('click', async function(e) {        
+  document.querySelector("#copyText").addEventListener("click", copy);
+
+     
+
+  map.on('click', async function(e) {        
        
       
         let lat = e.latlng.lat
@@ -342,10 +422,9 @@ map.on('click', async function(e) {
       } catch (error) {
           return
       }
-     
 
-        
-       
+      
+  
        
     });
    
