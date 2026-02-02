@@ -72,3 +72,11 @@ transform: rotate(0deg); }
 transform: rotate(360deg); }
 }
 
+.easy-button-button {
+  background-color: #fff;
+  transition: background-color 3s linear;
+}
+
+.easy-button-button.clicked {
+  background-color: black;
+}

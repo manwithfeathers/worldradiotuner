@@ -242,12 +242,35 @@ var homeBtn = L.easyButton( "fa-home", function (btn, map) {
   $("#countrySelect").val(appState.myCountry.countryCode).change()
 });
 
-var presetBtn = L.easyButton("fa-floppy-o ", (btn) => {
+var storePreset;
+
+var presetBtn = L.easyButton("fa-tree ", (btn) => {
+  
+})
+
+btnAccess = presetBtn.button;
+
+
+
+btnAccess.addEventListener("mousedown", ()=> {
+  btnAccess.classList.add("clicked")
+
+storePreset = setTimeout(() => {
   let preset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl)
-  console.log(preset)
+  
+
   preset = JSON.stringify(preset)
   localStorage.setItem("preset1", preset);
+  
+}, 3000)
 })
+
+btnAccess.addEventListener("mouseup", () => {
+  btnAccess.classList.remove("clicked")
+  clearTimeout(storePreset)
+})
+
+
 
 var recallBtn = L.easyButton("fa-heart", () => {
   let preset = localStorage.getItem("preset1")
@@ -256,7 +279,7 @@ var recallBtn = L.easyButton("fa-heart", () => {
 
 })
 
-var shareBtn = L.easyButton("fa-tree", (btn) => {
+var shareBtn = L.easyButton("fa-share-nodes", (btn) => {
   let params = {
     url: appState.streamingUrl,
     country: appState.radioLocation,
@@ -264,7 +287,7 @@ var shareBtn = L.easyButton("fa-tree", (btn) => {
   }
   let shareableParams = new URLSearchParams(params)
   let link= `${window.location.origin}${window.location.pathname}?${shareableParams}`
-  $("#shareText").val(link)
+  $("#shareText").val(`I found these cool sounds on the World Radio Tuner: ${link}`)
   shareModal.show()
 })
 
