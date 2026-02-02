@@ -74,9 +74,27 @@ transform: rotate(360deg); }
 
 .easy-button-button {
   background-color: #fff;
-  transition: background-color 3s linear;
+  position: relative;
+  overflow: hidden;
+}
+
+.easy-button-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background-color: #4CAF50;
+  
+  z-index: 0;
+}
+
+.easy-button-button.clicked::before {
+  width: 100%;
+  transition: width 3s linear;
 }
 
 .easy-button-button.clicked {
-  background-color: black;
+  background-color: #4CAF50;
 }
