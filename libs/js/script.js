@@ -68,10 +68,14 @@ const appState = {
   radioName: null,
   radioLocation: null,
   streamingUrl: null,
-  preset1: false,
-  preset2: false,
-  preset3: false,
+  presets: {
+    preset1: null,
+    preset2: null,
+    preset3: null,
+  },
   saving: false,
+  deleting: false,
+  presetButtons: {}
 }
 
 
@@ -89,7 +93,6 @@ const geojsonStyling = {
 //modals
 
 let errorModal;
-
 
 function showError(error) {
   $("#errorTitle").html(error.message || error.statusText || "Error")
@@ -126,22 +129,6 @@ function copy() {
   copyText.select();
   document.execCommand("copy");
 }
-
-
-
-// wrapper for ajax caller to give error messages. need to fix + improve
-
-const markerLayer = (obj, target, icon) => {
-  
-  target.clearLayers()
-  for (const [key, value] of Object.entries(obj)) {
-    let name = value["name"];
-    let lat = value["lat"];
-    let lng = value["lng"];
-   
-    L.marker([lat, lng], {icon : icon}).bindTooltip(name).addTo(target);
-  }
-}
         
 const countryInfo = async (countryCode = appState.selectedCountry.countryCode, target = appState.selectedCountry) => {
   let result = await ajaxCaller("libs/php/getCountryInfo.php", { name: countryCode})
@@ -151,8 +138,7 @@ const countryInfo = async (countryCode = appState.selectedCountry.countryCode, t
     target.population = null;
     target.capital = null;
     target.area = null;
-    target.currencyCode = null;
-    
+    target.currencyCode = null; 
     } else {
     target.population = result['data'][0]['population']
     target.capital = result['data'][0]['capital']
@@ -169,7 +155,6 @@ function playRadio(stationArray) {
   let x = Math.floor(Math.random() * filteredArray.length)
   appState.streamingUrl = filteredArray[x]['url'];
   appState.radioName = filteredArray[x]['name']
-  
   $("#radioFrame").attr("src", appState.streamingUrl)
   $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
   $("#radioPlayer").removeClass("d-none")
@@ -187,6 +172,9 @@ function playPreset(preset) {
   $("#radioFrame").attr("src", url)
   $("#radioInfo").html(`Listen to ${station} from ${country}`)
   $("#radioPlayer").removeClass("d-none")
+  appState.radioLocation = country;
+  appState.radioName = station;
+  appState.streamingUrl = url;
   appState.radioPlaying = true;
   $("#radioFrame")[0].play()
   
@@ -210,7 +198,6 @@ var basemaps = {
   "Streets": streets,
   
 };
-
 
 
 //country select listener
@@ -255,6 +242,14 @@ var saveBtn = L.easyButton("fa-floppy-disk", function (btn) {
   appState.saving ? saveBtnAccess.classList.add("active") : saveBtnAccess.classList.remove("active") 
 })
 
+let trashBtnAccess;
+
+var trashBtn = L.easyButton("fa-trash", function (btn){
+  trashBtnAccess = btn.button
+  appState.deleting = !appState.deleting
+  appState.deleting ? trashBtnAccess.classList.add("active") : trashBtnAccess.classList.remove("active") 
+})
+
 function makePresetButton({icon, name}) {
   const btn = L.easyButton(icon, (btn) => {
     if (appState.saving) {
@@ -263,8 +258,17 @@ function makePresetButton({icon, name}) {
       localStorage.setItem(name, preset);
       appState.saving = false
       saveBtnAccess.classList.remove("active")
+      btn.button.classList.add("full")
+      appState.presets[name] = preset;
       return
     } 
+
+    if (appState.deleting) {
+      localStorage.removeItem(name)
+      appState.deleting = false
+      trashBtnAccess.classList.remove("active")
+      btn.button.classList.remove("full")
+    }
 
     if (localStorage.getItem(name)) {
 
@@ -275,9 +279,9 @@ function makePresetButton({icon, name}) {
   })
   
   btn.addTo(map)
+  appState.presetButtons[name] = btn
   return btn
 }
-
 
 
 var shareBtn = L.easyButton("fa-share-nodes", (btn) => {
@@ -347,38 +351,33 @@ $(document).ready( async function () {
       appState.selectedCountry.countryCode = appState.myCountry.countryCode;
       appState.selectedCountry.currencyCode = appState.myCountry.currencyCode
     }
-    
+  
     $("#countrySelect").val(appState.myCountry.countryCode).change();
     
-    // first check if preset is shared in url 
+    // first check if preset is shared in url , if so play that
     const params = new URLSearchParams(window.location.search);
 
     
     if(params.toString()) {
-      let stationCountry = params.get("country");
-      let stationUrl = params.get("url");
-      let stationName = params.get("name")
-      let thisPreset = new Preset(stationCountry, stationName, stationUrl)
+      
+      appState.radioLocation = params.get("country");
+      appState.streamingUrl = params.get("url");
+      appState.radioName = params.get("name")
+      let thisPreset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl)
       playPreset(thisPreset)
+      console.log(appState)
       return
       } 
     
     let radios = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
   
     if (!radios) return;
-
     appState.selectedCountry.radio = radios["data"]
-
-  // this will help later to see if user has changed country
     appState.radioLocation = appState.selectedCountry.name;
     playRadio(appState.selectedCountry.radio)
     
   
-  
-  
-  
   })
-
 
   let layerControl = L.control.layers(basemaps).addTo(map);
  	
@@ -389,12 +388,8 @@ $(document).ready( async function () {
   makePresetButton({icon:"fa-2", name: "preset2"})
   makePresetButton({icon:"fa-3", name: "preset3"})
   saveBtn.addTo(map)
-
-
-
-
+  trashBtn.addTo(map)
   shareBtn.addTo(map)
-
 
   errorModal = new bootstrap.Modal(document.getElementById('errorModal'))
   shareModal = new bootstrap.Modal(document.getElementById("shareModal"))
@@ -410,7 +405,7 @@ $(document).ready( async function () {
   
 
   $("#scanBtn").on("click", async () => {
-    if (appState.radioLocation !== appState.selectedCountry.name) {
+    if (appState.radioLocation !== appState.selectedCountry.name || !appState.selectedCountry.radio) {
       let result = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
       if (!result) return;
       appState.selectedCountry.radio = result["data"]
@@ -427,7 +422,12 @@ $(document).ready( async function () {
 
   document.querySelector("#copyText").addEventListener("click", copy);
 
-     
+     for (const [key, value] of Object.entries(appState.presets)){
+      if (localStorage.getItem(key)){
+        appState.presets[key] = localStorage.getItem(key)
+        appState.presetButtons[key].button.classList.add("full")
+      }
+     }
 
   map.on('click', async function(e) {        
        

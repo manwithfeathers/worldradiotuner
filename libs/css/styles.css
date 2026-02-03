@@ -78,5 +78,5 @@ transform: rotate(360deg); }
 }
 
 .easy-button-button.full {
-  background-color: slategrey;
+  background-color: lightseagreen !important;
 }
