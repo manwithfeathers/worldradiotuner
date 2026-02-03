@@ -70,7 +70,8 @@ const appState = {
   streamingUrl: null,
   preset1: false,
   preset2: false,
-  preset3: false
+  preset3: false,
+  saving: false,
 }
 
 
@@ -246,73 +247,38 @@ var homeBtn = L.easyButton( "fa-home", function (btn, map) {
   $("#countrySelect").val(appState.myCountry.countryCode).change()
 });
 
-var storePreset;
+let saveBtnAccess;
 
-
-
+var saveBtn = L.easyButton("fa-floppy-disk", function (btn) {
+  saveBtnAccess = btn.button
+  appState.saving = !appState.saving
+  appState.saving ? saveBtnAccess.classList.add("active") : saveBtnAccess.classList.remove("active") 
+})
 
 function makePresetButton({icon, name}) {
-  const btn = L.easyButton(icon, () => {})
-  const btnAccess = btn.button
-  let storePreset
-  btnAccess.addEventListener("mousedown", () => {
-    btnAccess.classList.add("clicked")
-
-    storePreset = setTimeout(() => {
+  const btn = L.easyButton(icon, (btn) => {
+    if (appState.saving) {
       let preset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl)
       preset = JSON.stringify(preset)
       localStorage.setItem(name, preset);
-    }, 3000)
-  })
+      appState.saving = false
+      saveBtnAccess.classList.remove("active")
+      return
+    } 
 
-  btnAccess.addEventListener("mouseup", () => {
-    btnAccess.classList.remove("clicked")
-    clearTimeout(storePreset)
-  })
+    if (localStorage.getItem(name)) {
 
-  btnAccess.addEventListener("click", () => {
     let preset = localStorage.getItem(name)
     preset = JSON.parse(preset)
     playPreset(preset)
+    }
   })
-
+  
   btn.addTo(map)
-
   return btn
 }
 
 
-
-
-// preset1BtnAccess = preset1Btn.button;
-// preset1BtnAccess.addEventListener("mousedown", ()=> {
-// preset1BtnAccess.classList.add("clicked")
-
-// storePreset1 = setTimeout(() => {
-//   let preset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl)
-//   preset = JSON.stringify(preset)
-//   localStorage.setItem("preset1", preset);
-// }, 3000)
-// })
-
-// preset1BtnAccess.addEventListener("mouseup", () => {
-//   preset1BtnAccess.classList.remove("clicked")
-//   clearTimeout(storePreset1)
-// })
-
-// preset1BtnAccess.addEventListener("click", () => {
-//   let preset = localStorage.getItem("preset1")
-//   preset = JSON.parse(preset)
-//   playPreset(preset)
-
-// } )
-
-// var recallBtn = L.easyButton("fa-heart", () => {
-//   let preset = localStorage.getItem("preset1")
-//   preset = JSON.parse(preset)
-//   playPreset(preset)
-
-// })
 
 var shareBtn = L.easyButton("fa-share-nodes", (btn) => {
   let params = {
@@ -418,10 +384,11 @@ $(document).ready( async function () {
  	
   homeBtn.addTo(map)
   radioBtn.addTo(map)
+
   makePresetButton({icon:"fa-1", name: "preset1"})
   makePresetButton({icon:"fa-2", name: "preset2"})
-
   makePresetButton({icon:"fa-3", name: "preset3"})
+  saveBtn.addTo(map)
 
 
 

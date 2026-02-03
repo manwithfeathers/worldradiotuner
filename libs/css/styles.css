@@ -72,29 +72,11 @@ transform: rotate(0deg); }
 transform: rotate(360deg); }
 }
 
-.easy-button-button {
-  background-color: #fff;
-  position: relative;
-  overflow: hidden;
+
+.easy-button-button.active {
+  background-color: red !important;
 }
 
-.easy-button-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 100%;
-  background-color: #4CAF50;
-  
-  z-index: 0;
-}
-
-.easy-button-button.clicked::before {
-  width: 100%;
-  transition: width 3s linear;
-}
-
-.easy-button-button.clicked {
-  background-color: #4CAF50;
+.easy-button-button.full {
+  background-color: slategrey;
 }
