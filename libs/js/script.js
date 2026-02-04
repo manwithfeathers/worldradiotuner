@@ -153,6 +153,7 @@ function playRadio(stationArray) {
   // filter out stations that force download and don't stream well in iframe
   let filteredArray = stationArray.filter(station => !station.url.includes("m3u"))
   let x = Math.floor(Math.random() * filteredArray.length)
+  console.log(filteredArray)
   appState.streamingUrl = filteredArray[x]['url'];
   appState.radioName = filteredArray[x]['name']
   $("#radioFrame").attr("src", appState.streamingUrl)
@@ -324,7 +325,10 @@ $(document).ready( async function () {
   
   map = L.map("map", {
     layers: [satellite],
-    worldCopyJump: true
+    maxBounds: [[-90, -180], [90, 180]], 
+    maxBoundsViscosity: 1.0, 
+    minZoom: 2, 
+    worldCopyJump: true 
   })
 
   
@@ -401,7 +405,6 @@ $(document).ready( async function () {
   		for (let key in countries) {
         $('#countrySelect').append('<option value="' + countries[key] + '">' + key + '</option>')
       }  
-  
   
 
   $("#scanBtn").on("click", async () => {
