@@ -95,9 +95,21 @@ const geojsonStyling = {
 let errorModal;
 
 function showError(error) {
-  $("#errorTitle").html(error.message || error.statusText || "Error")
-  $("#errorText").html(error.description || error.responseText || "Network Error")
-  errorModal.show()
+
+  let errorText = error.status.description || error.responseText || "Network Error";
+
+  Toastify({
+  text: `Error: ${errorText}`,
+  duration: 2000,
+  newWindow: true,
+  close: true,
+  gravity: "top", 
+  position: "left", 
+  stopOnFocus: false, 
+  style: {
+    background: 'grey'
+  } 
+}).showToast();
 }
 
 //Async ajax function to keep things in order when awaiting api responses.
@@ -129,7 +141,30 @@ function copy() {
   copyText.select();
   document.execCommand("copy");
 }
-        
+
+async function randomCountry() {
+  Toastify({
+  text: "Struggling to locate you. Picking a random country.",
+  duration: 3000,
+  newWindow: true,
+  close: true,
+  gravity: "bottom", 
+  position: "left", 
+  stopOnFocus: false, 
+  style: {
+    background: 'grey'
+  } 
+}).showToast();
+
+  let rawCountries = await ajaxCaller("libs/php/populateCountrySelect.php", {})
+  let countries = rawCountries["data"]
+  let countryCodes = Object.values(countries)
+  let countryCode = countryCodes[Math.floor(Math.random() * countryCodes.length)]
+   appState.myCountry.countryCode = countryCode;
+  
+  $("#countrySelect").val(countryCode).change()
+}
+
 const countryInfo = async (countryCode = appState.selectedCountry.countryCode, target = appState.selectedCountry) => {
   let result = await ajaxCaller("libs/php/getCountryInfo.php", { name: countryCode})
 	// populate the country info in appState. Handle edge cases first.
@@ -153,7 +188,7 @@ function playRadio(stationArray) {
   // filter out stations that force download and don't stream well in iframe
   let filteredArray = stationArray.filter(station => !station.url.includes("m3u"))
   let x = Math.floor(Math.random() * filteredArray.length)
-  console.log(filteredArray)
+  
   appState.streamingUrl = filteredArray[x]['url'];
   appState.radioName = filteredArray[x]['name']
   $("#radioFrame").attr("src", appState.streamingUrl)
@@ -228,8 +263,13 @@ $('#countrySelect').on('change', async function() {
   padding: [50,50],
 });
   await countryInfo(countryId)
+   if ($('#preloader').length) {
+        $('#preloader').fadeOut('slow')
+        $("#preloader").remove()
+  }
  
 });
+
  
 var homeBtn = L.easyButton( "fa-home", function (btn, map) {
   $("#countrySelect").val(appState.myCountry.countryCode).change()
@@ -315,11 +355,6 @@ var radioBtn = L.easyButton( "fa-radio", async function (btn, map) {
 // ---------------------------------------------------------
 
 // initialise and add controls once DOM is ready
-$(window).on('load', function () { 
-  if ($('#preloader').length) {
-    $('#preloader').delay(1000).fadeOut('slow', function () { $(this).remove();}); 
-  }
-  });
 
 $(document).ready( async function () {
   
@@ -329,17 +364,23 @@ $(document).ready( async function () {
     maxBoundsViscosity: 1.0, 
     minZoom: 2, 
     worldCopyJump: true 
-  })
+  }).setView([20, 0], 2);
 
   
 
    // initialise myCountry, selectedCountry and countrySelect based on location
   navigator.geolocation.getCurrentPosition( async (pos) => {
+   
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
   
     let countryFromCoords= await ajaxCaller("libs/php/getCountryFromCoords.php", {lat: lat, lng: lng})
-    if (!countryFromCoords) return;
+    if (!countryFromCoords || !countryFromCoords["data"] ){
+      appState.myCountry.countryCode = appState.selectedCountry.countryCode;
+      appState.myCountry.name = appState.selectedCountry.name;
+      randomCountry()
+      return;
+    } 
     
     
 
@@ -369,7 +410,7 @@ $(document).ready( async function () {
       appState.radioName = params.get("name")
       let thisPreset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl)
       playPreset(thisPreset)
-      console.log(appState)
+     
       return
       } 
     
@@ -381,7 +422,13 @@ $(document).ready( async function () {
     playRadio(appState.selectedCountry.radio)
     
   
-  })
+  }, (error) => {
+    randomCountry()
+  }, {
+  enableHighAccuracy: false,
+  timeout: 3000,
+  maximumAge: 60000
+})
 
   let layerControl = L.control.layers(basemaps).addTo(map);
  	
