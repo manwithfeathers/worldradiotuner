@@ -94,6 +94,13 @@ const geojsonStyling = {
 
 let errorModal;
 
+function hidePreloader() {
+   if ($('#preloader').length) {
+        $('#preloader').fadeOut('slow')
+        $("#preloader").remove()
+  }
+}
+
 function showError(error) {
 
   let errorText = error.status.description || error.responseText || "Network Error";
@@ -295,10 +302,8 @@ $('#countrySelect').on('change', async function() {
   padding: [50,50],
 });
   await countryInfo(countryId)
-   if ($('#preloader').length) {
-        $('#preloader').fadeOut('slow')
-        $("#preloader").remove()
-  }
+  hidePreloader()
+  
  
 });
 
@@ -412,6 +417,7 @@ $(document).ready( async function () {
       appState.myCountry.countryCode = appState.selectedCountry.countryCode;
       appState.myCountry.name = appState.selectedCountry.name;
       await countryInfo(appState.myCountry.countryCode, appState.myCountry)
+      hidePreloader()
       return;
     } 
     
@@ -460,6 +466,7 @@ $(document).ready( async function () {
       appState.myCountry.countryCode = appState.selectedCountry.countryCode;
       appState.myCountry.name = appState.selectedCountry.name;
       countryInfo(appState.myCountry.countryCode, appState.myCountry)
+      hidePreloader()
       return;
   }, {
   enableHighAccuracy: false,
