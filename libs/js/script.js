@@ -183,15 +183,40 @@ const countryInfo = async (countryCode = appState.selectedCountry.countryCode, t
     }
   }
 
+const audio = document.getElementById("radioFrame")
 
-function playRadio(stationArray) {
+function stationPicker(stationArray){
+  let x = Math.floor(Math.random() * stationArray.length)
+  appState.streamingUrl = stationArray[x]['url'];
+  appState.radioName = stationArray[x]['name']
+  }
+
+
+  
+async function audioPlayer(){
+  audio.src = appState.streamingUrl
+  audio.load()
+  audio.play()
+  setTimeout(()=> {
+    if (!audio.readyState < 3)
+      {
+        stationPicker(appState.selectedCountry.radio)
+        audioPlayer()
+      }
+  }, 400)
+  
+}
+
+
+async function playRadio(stationArray) {
   // filter out stations that force download and don't stream well in iframe
   let filteredArray = stationArray.filter(station => !station.url.includes("m3u"))
   let x = Math.floor(Math.random() * filteredArray.length)
   
   appState.streamingUrl = filteredArray[x]['url'];
   appState.radioName = filteredArray[x]['name']
-  $("#radioFrame").attr("src", appState.streamingUrl)
+  await audioPlayer()
+  // $("#radioFrame").attr("src", appState.streamingUrl)
   $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
   $("#radioPlayer").removeClass("d-none")
   appState.radioPlaying = true;
@@ -376,9 +401,10 @@ $(document).ready( async function () {
   
     let countryFromCoords= await ajaxCaller("libs/php/getCountryFromCoords.php", {lat: lat, lng: lng})
     if (!countryFromCoords || !countryFromCoords["data"] ){
+      randomCountry()
       appState.myCountry.countryCode = appState.selectedCountry.countryCode;
       appState.myCountry.name = appState.selectedCountry.name;
-      randomCountry()
+      await countryInfo(appState.myCountry.countryCode, appState.myCountry)
       return;
     } 
     
@@ -424,6 +450,10 @@ $(document).ready( async function () {
   
   }, (error) => {
     randomCountry()
+      appState.myCountry.countryCode = appState.selectedCountry.countryCode;
+      appState.myCountry.name = appState.selectedCountry.name;
+      countryInfo(appState.myCountry.countryCode, appState.myCountry)
+      return;
   }, {
   enableHighAccuracy: false,
   timeout: 3000,
