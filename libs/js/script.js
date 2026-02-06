@@ -193,17 +193,24 @@ function stationPicker(stationArray){
 
 
   
-async function audioPlayer(){
+async function audioPlayer(attempts = 0){
+  if (appState.selectedCountry.radio.length === 0) {
+    return
+  }
+
+  if (attempts > 6){
+    return
+  }
   audio.src = appState.streamingUrl
   audio.load()
-  audio.play()
+  audio.play().catch(() => {})
   setTimeout(()=> {
-    if (!audio.readyState < 3)
+    if (audio.readyState < 3)
       {
         stationPicker(appState.selectedCountry.radio)
-        audioPlayer()
+        audioPlayer(attempts + 1)
       }
-  }, 400)
+  }, 500)
   
 }
 
