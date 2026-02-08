@@ -190,7 +190,33 @@ const countryInfo = async (countryCode = appState.selectedCountry.countryCode, t
     }
   }
 
-const audio = document.getElementById("radioFrame")
+
+
+
+  
+
+// async function audioPlayer(attempts = 0){
+//   if (appState.selectedCountry.radio.length === 0) {
+//     return
+//   }
+
+//   if (attempts > 6){
+//     return
+//   }
+//   audio.src = appState.streamingUrl
+//   audio.load()
+//   audio.play().catch(() => {})
+//   setTimeout(()=> {
+//     if (audio.readyState < 3)
+//       {
+//         stationPicker(appState.selectedCountry.radio)
+//         audioPlayer(attempts + 1)
+//       }
+//   }, 500)
+  
+// }
+
+let audio = document.getElementById("radioFrame")
 
 function stationPicker(stationArray){
   let x = Math.floor(Math.random() * stationArray.length)
@@ -199,26 +225,39 @@ function stationPicker(stationArray){
   }
 
 
-  
-async function audioPlayer(attempts = 0){
-  if (appState.selectedCountry.radio.length === 0) {
-    return
-  }
+const canPlay = (streamingUrl) => {
+  return new Promise((resolve, reject)=> {
+    
+    audio.src = streamingUrl;
+    audio.load()
 
-  if (attempts > 6){
-    return
+    const timer = setTimeout(() => {
+       audio.readyState >= 3 ? resolve() : reject();
+    }, 1000)
+
+    audio.addEventListener("canplay", () => {
+      clearTimeout(timer)
+      resolve();
+    }, { once: true })
+
+    audio.addEventListener("error", ()=> {
+      clearTimeout(timer)
+      reject();
+    }, { once: true })
+  })
+}
+
+async function stationPlayer() {
+
+  for (let i = 0; i < 7; i++) {
+    try {
+      await canPlay(appState.streamingUrl)
+      await audio.play()
+      break;
+    } catch {
+      stationPicker(appState.selectedCountry.radio) 
+    }
   }
-  audio.src = appState.streamingUrl
-  audio.load()
-  audio.play().catch(() => {})
-  setTimeout(()=> {
-    if (audio.readyState < 3)
-      {
-        stationPicker(appState.selectedCountry.radio)
-        audioPlayer(attempts + 1)
-      }
-  }, 500)
-  
 }
 
 
@@ -229,10 +268,10 @@ async function playRadio(stationArray) {
   
   appState.streamingUrl = filteredArray[x]['url'];
   appState.radioName = filteredArray[x]['name']
-  await audioPlayer()
+  await stationPlayer() 
   // $("#radioFrame").attr("src", appState.streamingUrl)
   $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
-  $("#radioPlayer").removeClass("d-none")
+ 
   appState.radioPlaying = true;
 }
 
@@ -241,6 +280,8 @@ function stopRadio () {
   $("#radioPlayer").addClass("d-none")
   appState.radioPlaying = false;
 }
+
+
 
 function playPreset(preset) {
   let {country, station, url} = preset;
@@ -505,14 +546,15 @@ $(document).ready( async function () {
       appState.selectedCountry.radio = result["data"]
       appState.radioLocation = appState.selectedCountry.name;
     }
-    playRadio(appState.selectedCountry.radio)
-     $("#radioFrame")[0].play()
+    stationPicker(appState.selectedCountry.radio)
+    await stationPlayer()
+    $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
+ 
+    appState.radioPlaying = true;
+
+    
   })
   
-  $('audio').on('error', () => {
-    // scan on error
-    playRadio(appState.selectedCountry.radio)
-  }) 
 
   document.querySelector("#copyText").addEventListener("click", copy);
 
