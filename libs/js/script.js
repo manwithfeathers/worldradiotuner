@@ -68,6 +68,8 @@ const appState = {
   radioName: null,
   radioLocation: null,
   streamingUrl: null,
+  radioLat: null,
+  radioLng: null,
   presets: {
     preset1: null,
     preset2: null,
@@ -221,7 +223,9 @@ let audio = document.getElementById("radioFrame")
 function stationPicker(stationArray){
   let x = Math.floor(Math.random() * stationArray.length)
   appState.streamingUrl = stationArray[x]['url'];
-  appState.radioName = stationArray[x]['name']
+  appState.radioName = stationArray[x]['name'];
+  appState.radioLat = stationArray[x]['geo_lat']
+  appState.radioLng = stationArray[x]['geo_long']
   }
 
 
@@ -232,8 +236,8 @@ const canPlay = (streamingUrl) => {
     audio.load()
 
     const timer = setTimeout(() => {
-       audio.readyState >= 3 ? resolve() : reject();
-    }, 1000)
+      reject()
+    }, 500)
 
     audio.addEventListener("canplay", () => {
       clearTimeout(timer)
@@ -255,11 +259,24 @@ async function stationPlayer() {
       await audio.play()
       break;
     } catch {
+      
       stationPicker(appState.selectedCountry.radio) 
     }
   }
 }
 
+
+function placeStation() {
+  console.log(appState.radioLat, appState.radioLng)
+  
+  if (appState.radioLat && appState.radioLng) {   
+    L.popup()
+    .setLatLng([appState.radioLat, appState.radioLng])
+    .setContent(appState.radioName)
+    .openOn(map);
+     
+  }
+}
 
 async function playRadio(stationArray) {
   // filter out stations that force download and don't stream well in iframe
@@ -268,7 +285,12 @@ async function playRadio(stationArray) {
   
   appState.streamingUrl = filteredArray[x]['url'];
   appState.radioName = filteredArray[x]['name']
+  appState.radioLat = stationArray[x]['geo_lat']
+  appState.radioLng = stationArray[x]['geo_lng']
+  
+
   await stationPlayer() 
+  // placeStation()
   // $("#radioFrame").attr("src", appState.streamingUrl)
   $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
  
@@ -293,6 +315,7 @@ function playPreset(preset) {
   appState.streamingUrl = url;
   appState.radioPlaying = true;
   $("#radioFrame")[0].play()
+ 
   
 }
 
@@ -314,6 +337,8 @@ var basemaps = {
   "Streets": streets,
   
 };
+
+// const infoMessage = '<h5>Play Preset:</h5> <i class="fa-solid fa-1"></i><br><h5>Store Preset:</h5> <i class="fa-solid fa-floppy-disk"></i> <p>+</p> <i class="fa-solid fa-1"></i><br><h5>Delete Preset:</h5> <i class="fa-solid fa-trash"></i> <p>+</p> <i class="fa-solid fa-1"></i>'
 
 
 //country select listener
@@ -346,6 +371,10 @@ $('#countrySelect').on('change', async function() {
   hidePreloader()
   
  
+});
+
+var instructionsBtn = L.easyButton( "fa-info", function (btn, map) {
+  instructionsModal.show()
 });
 
  
@@ -417,15 +446,15 @@ var shareBtn = L.easyButton("fa-share-nodes", (btn) => {
 
 
 
-var radioBtn = L.easyButton( "fa-radio", async function (btn, map) {
-  if (appState.radioPlaying){
-    stopRadio()
-    return;
-  }
+// var radioBtn = L.easyButton( "fa-radio", async function (btn, map) {
+//   if (appState.radioPlaying){
+//     stopRadio()
+//     return;
+//   }
   
-  playRadio(appState.selectedCountry.radio)
+//   playRadio(appState.selectedCountry.radio)
   
-});
+// });
 
 
 // ---------------------------------------------------------
@@ -497,6 +526,7 @@ $(document).ready( async function () {
     let radios = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
   
     if (!radios) return;
+   
     appState.selectedCountry.radio = radios["data"]
     appState.radioLocation = appState.selectedCountry.name;
     playRadio(appState.selectedCountry.radio)
@@ -517,8 +547,9 @@ $(document).ready( async function () {
 
   let layerControl = L.control.layers(basemaps).addTo(map);
  	
+  instructionsBtn.addTo(map)
   homeBtn.addTo(map)
-  radioBtn.addTo(map)
+ 
 
   makePresetButton({icon:"fa-1", name: "preset1"})
   makePresetButton({icon:"fa-2", name: "preset2"})
@@ -526,9 +557,12 @@ $(document).ready( async function () {
   saveBtn.addTo(map)
   trashBtn.addTo(map)
   shareBtn.addTo(map)
+  
 
   errorModal = new bootstrap.Modal(document.getElementById('errorModal'))
   shareModal = new bootstrap.Modal(document.getElementById("shareModal"))
+  instructionsModal = new bootstrap.Modal(document.getElementById("instructionsModal"))
+
 
   // populate country select
   let rawCountries = await ajaxCaller("libs/php/populateCountrySelect.php", {})
@@ -548,7 +582,10 @@ $(document).ready( async function () {
     }
     stationPicker(appState.selectedCountry.radio)
     await stationPlayer()
+    
+      
     $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
+    // placeStation()
  
     appState.radioPlaying = true;
 
@@ -597,18 +634,18 @@ $(document).ready( async function () {
    
   
  
-// Toastify({
-//   text: "",
-//   duration: 3000,
-//   newWindow: true,
-//   close: true,
-//   gravity: "top", 
-//   position: "left", 
-//   stopOnFocus: false, 
-//   style: {
-//     background: 'grey'
-//   } 
-// }).showToast();
+Toastify({
+  text: "Welcome to the World Radio Tuner",
+  duration: 3000,
+  newWindow: true,
+  close: true,
+  gravity: "top", 
+  position: "left", 
+  stopOnFocus: false, 
+  style: {
+    background: 'grey'
+  } 
+}).showToast();
 })
 
 
