@@ -174,33 +174,19 @@ async function randomCountry() {
   $("#countrySelect").val(countryCode).change()
 }
 
-// const countryInfo = async (countryCode = appState.selectedCountry.countryCode, target = appState.selectedCountry) => {
-//   let result = await ajaxCaller("libs/php/getCountryInfo.php", { name: countryCode})
-// 	// populate the country info in appState. Handle edge cases first.
-//   if (!result) return false
-//   if (!result["data"]) {
-//     target.population = null;
-//     target.capital = null;
-//     target.area = null;
-//     target.currencyCode = null; 
-//     } else {
-//     target.population = result['data'][0]['population']
-//     target.capital = result['data'][0]['capital']
-//     target.area = result['data'][0]['areaInSqKm']
-//     target.currencyCode = result["data"][0]["currencyCode"]
-//     return true
-//     }
-//   }
-
 
 let audio = document.getElementById("radioFrame")
 
 function stationPicker(stationArray){
+  if (stationArray.length !== 0) {
   let x = Math.floor(Math.random() * stationArray.length)
   appState.streamingUrl = stationArray[x]['url'];
   appState.radioName = stationArray[x]['name'];
   appState.radioLat = stationArray[x]['geo_lat']
   appState.radioLng = stationArray[x]['geo_long']
+  } else {
+    showError({responseText: "No stations available for this country right now, please select another country"})
+  }
   }
 
 
@@ -265,6 +251,7 @@ async function stationPlayer(attempts=20) {
       stationPicker(appState.selectedCountry.radio) 
     }
   }
+    showError({responseText: "No stations available for this country right now, please select another country"})
 }
 
 
@@ -283,12 +270,19 @@ function placeStation() {
 async function playRadio(stationArray) {
   // filter out stations that force download and don't stream well in iframe
   let filteredArray = stationArray.filter(station => !station.url.includes("m3u"))
+
+if (filteredArray.length !== 0) {
+
   let x = Math.floor(Math.random() * filteredArray.length)
   
   appState.streamingUrl = filteredArray[x]['url'];
   appState.radioName = filteredArray[x]['name']
-  appState.radioLat = stationArray[x]['geo_lat']
-  appState.radioLng = stationArray[x]['geo_lng']
+  appState.radioLat = filteredArray[x]['geo_lat']
+  appState.radioLng = filteredArray[x]['geo_lng']
+} else {
+    showError({responseText: "No stations available for this country right now, please select another country"})
+    return
+  }
   
 
   await stationPlayer() 
