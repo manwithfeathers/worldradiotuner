@@ -138,6 +138,8 @@ async function randomCountry() {
   $("#countrySelect").val(countryCode).change()
 }
 
+let saveBtnAccess;
+let trashBtnAccess;
 
 let audio = document.getElementById("radioFrame")
 
@@ -234,43 +236,36 @@ function placeStation() {
   }
 }
 
-async function playRadio(stationArray) {
-  // filter out stations that force download and don't stream well in iframe
-  let filteredArray = stationArray.filter(station => !station.url.includes("m3u"))
+// async function playRadio(stationArray) {
+//   // filter out stations that force download and don't stream well in iframe
+//   let filteredArray = stationArray.filter(station => !station.url.includes("m3u"))
 
-if (filteredArray.length !== 0) {
+// if (filteredArray.length !== 0) {
 
-  let x = Math.floor(Math.random() * filteredArray.length)
+//   stationPicker(filteredArray)
+// } else {
+//     showError({responseText: "No stations available for this country right now, please select another country"})
+//     return
+//   }
   
-  appState.streamingUrl = filteredArray[x]['url'];
-  appState.radioName = filteredArray[x]['name']
-  appState.radioLat = filteredArray[x]['geo_lat']
-  appState.radioLng = filteredArray[x]['geo_lng']
-  appState.radioCode = filteredArray[x]["countrycode"]
-} else {
-    showError({responseText: "No stations available for this country right now, please select another country"})
-    return
-  }
+//   let playing = await stationPlayer() 
+
+//   if (!playing) {
+//     showError({responseText: "No more stations available for this country right now, please select another country"})
+//     return
+//   }
+//   placeStation()
   
-
-  let playing = await stationPlayer() 
-
-  if (!playing) {
-    showError({responseText: "No more stations available for this country right now, please select another country"})
-    return
-  }
-  // placeStation()
-  // $("#radioFrame").attr("src", appState.streamingUrl)
-  $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
+//   $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.radioLocation}`)
  
-  appState.radioPlaying = true;
-}
+//   appState.radioPlaying = true;
+// }
 
-function stopRadio () {
-  $("#radioFrame")[0].pause()
-  $("#radioPlayer").addClass("d-none")
-  appState.radioPlaying = false;
-}
+// function stopRadio () {
+//   $("#radioFrame")[0].pause()
+//   $("#radioPlayer").addClass("d-none")
+//   appState.radioPlaying = false;
+// }
 
 
 
@@ -312,9 +307,6 @@ var basemaps = {
   
 };
 
-// const infoMessage = '<h5>Play Preset:</h5> <i class="fa-solid fa-1"></i><br><h5>Store Preset:</h5> <i class="fa-solid fa-floppy-disk"></i> <p>+</p> <i class="fa-solid fa-1"></i><br><h5>Delete Preset:</h5> <i class="fa-solid fa-trash"></i> <p>+</p> <i class="fa-solid fa-1"></i>'
-
-
 //country select listener
 $('#countrySelect').on('change', async function() {
 	appState.selectedCountry.name = $("#countrySelect option:selected").text();
@@ -333,7 +325,6 @@ $('#countrySelect').on('change', async function() {
     appState.selectedCountry.geoJSON.clearLayers()
   }
 
-  
 
   appState.selectedCountry.geoJSON = L.geoJSON(myGeoJSON, {style: geojsonStyling})
   appState.selectedCountry.geoJSON.addTo(map);
@@ -341,7 +332,6 @@ $('#countrySelect').on('change', async function() {
   maxZoom: 5,
   padding: [50,50],
 });
-  // await countryInfo(countryId)
   hidePreloader()
   
  
@@ -360,7 +350,7 @@ var homeBtn = L.easyButton( "fa-home", function (btn, map) {
   $("#countrySelect").val(appState.myCountry.countryCode).change()
 });
 
-let saveBtnAccess;
+
 
 var saveBtn = L.easyButton("fa-floppy-disk", function (btn) {
   saveBtnAccess = btn.button
@@ -368,7 +358,7 @@ var saveBtn = L.easyButton("fa-floppy-disk", function (btn) {
   appState.saving ? saveBtnAccess.classList.add("active") : saveBtnAccess.classList.remove("active") 
 })
 
-let trashBtnAccess;
+
 
 var trashBtn = L.easyButton("fa-trash", function (btn){
   trashBtnAccess = btn.button
@@ -457,7 +447,7 @@ $(document).ready( async function () {
       return;
     } 
     
-    
+
     appState.myCountry.countryCode = countryFromCoords['data']["country_code"].toUpperCase();
     appState.myCountry.name = countryFromCoords['data']["name"];  
     
@@ -491,7 +481,9 @@ $(document).ready( async function () {
    
     appState.selectedCountry.radio = radios["data"]
     appState.radioLocation = appState.selectedCountry.name;
-    playRadio(appState.selectedCountry.radio)
+    await stationPicker()
+    await stationPlayer()
+    placeStation()
     
   
   }, (error) => {
@@ -556,7 +548,7 @@ $(document).ready( async function () {
 
     if (playing) {
     
-    $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
+    $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.radioLocation}`)
     appState.radioPlaying = true;
     }
    
