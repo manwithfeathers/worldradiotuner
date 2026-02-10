@@ -36,7 +36,17 @@
     $output['status'] = $response['status'];
     $output['status']['name'] = "ok";
     $output['status']['description'] = "success";
-    $output['data'] = $response['data'];
+
+    for ($i = 0; $i < count($response["data"]); $i++) { 
+        $output['data'][$i]["url"] = $response['data'][$i]["url"];
+        $output['data'][$i]["countrycode"] = $response['data'][$i]["countrycode"];
+        $output['data'][$i]["name"] = $response['data'][$i]["name"];
+
+        $output['data'][$i]["geo_lat"] = $response['data'][$i]["geo_lat"];
+        $output['data'][$i]["geo_long"] = $response['data'][$i]["geo_long"];
+
+    }
+
     echo json_encode($output); 
     
 

@@ -124,7 +124,7 @@ async function ajaxCaller(url, args) {
       dataType: "json",
       data: args
     });
-    // console.log(result);
+   
      if (result.status.name !== "ok" ) {
       showError(result)
       return null;
@@ -170,7 +170,7 @@ async function randomCountry() {
 let audio = document.getElementById("radioFrame")
 
 function stationPicker(stationArray){
-  console.log(appState)
+ 
   if (stationArray.length !== 0) {
   let x = Math.floor(Math.random() * stationArray.length)
   appState.streamingUrl = stationArray[x]['url'];
@@ -281,7 +281,12 @@ if (filteredArray.length !== 0) {
   }
   
 
-  await stationPlayer() 
+  let playing = await stationPlayer() 
+
+  if (!playing) {
+    showError({responseText: "No more stations available for this country right now, please select another country"})
+    return
+  }
   // placeStation()
   // $("#radioFrame").attr("src", appState.streamingUrl)
   $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
