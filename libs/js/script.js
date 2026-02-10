@@ -1,32 +1,4 @@
 // ---------------------------------------------------------
-// TO DO
-// ---------------------------------------------------------
-// 
-// pre loader
-// currency API - rate limit
-// check UI on large screens 
-// north korea wiki
-// weather modal overspill 
-
-//inconsistent function styles a problem?
-// can i split this into separate js files 
-// remove old php files
-
-// fix error handling 
-// improve styling and consistency of modals / cards in index html
-
-// event listener bug on markers
-// add onclick to bring up menu "show wiki etc"
-
-// another API
-// more layers , more info
-
-// bugs
-// n cyprus n korea  bosnia n herz
-// scan can cause error modal
-
-
-// ---------------------------------------------------------
 // GLOBAL DECLARATIONS
 // ---------------------------------------------------------
 
@@ -375,8 +347,12 @@ $('#countrySelect').on('change', async function() {
  
 });
 
-var instructionsBtn = L.easyButton( "fa-info", function (btn, map) {
-  instructionsModal.show()
+var instructionsBtn = L.easyButton({
+  position: "topright",
+  states: [{
+    icon: "fa-info",
+    onClick: () => instructionsModal.show()
+  }]
 });
 
  
