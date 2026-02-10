@@ -33,10 +33,11 @@
 var map;
 
 class Preset {
-  constructor (country, station, url) {
+  constructor (country, station, url, code) {
     this.country = country,
     this.station = station,
-    this.url = url
+    this.url = url,
+    this.code = code
   }
 }
 
@@ -45,31 +46,22 @@ const appState = {
   selectedCountry: {
     name: null,
     countryCode: null,
-    currencyCode: null,
-    population: null,
-    capital: null,
-    area: null,
     geoJSON: null,
     radio: null
   },
   myCountry: {
     name: null,
     countryCode: null,
-    currencyCode: null
+    
   },
 
-  currencyExchange: {
-    currencyCodeFrom: null,
-    currencyCodeTo: null,
-    swapped: false,
-    exchangeRates: null,
-  },
   radioPlaying: false,
   radioName: null,
   radioLocation: null,
   streamingUrl: null,
   radioLat: null,
   radioLng: null,
+  radioCode: null,
   presets: {
     preset1: null,
     preset2: null,
@@ -178,12 +170,14 @@ async function randomCountry() {
 let audio = document.getElementById("radioFrame")
 
 function stationPicker(stationArray){
+  console.log(appState)
   if (stationArray.length !== 0) {
   let x = Math.floor(Math.random() * stationArray.length)
   appState.streamingUrl = stationArray[x]['url'];
   appState.radioName = stationArray[x]['name'];
   appState.radioLat = stationArray[x]['geo_lat']
   appState.radioLng = stationArray[x]['geo_long']
+  appState.radioCode = stationArray[x]["countrycode"]
   } else {
     showError({responseText: "No stations available for this country right now, please select another country"})
   }
@@ -280,6 +274,7 @@ if (filteredArray.length !== 0) {
   appState.radioName = filteredArray[x]['name']
   appState.radioLat = filteredArray[x]['geo_lat']
   appState.radioLng = filteredArray[x]['geo_lng']
+  appState.radioCode = filteredArray[x]["countrycode"]
 } else {
     showError({responseText: "No stations available for this country right now, please select another country"})
     return
@@ -303,15 +298,20 @@ function stopRadio () {
 
 
 function playPreset(preset) {
-  let {country, station, url} = preset;
+  let {country, station, url, code} = preset;
   $("#radioFrame").attr("src", url)
   $("#radioInfo").html(`Listen to ${station} from ${country}`)
   $("#radioPlayer").removeClass("d-none")
   appState.radioLocation = country;
   appState.radioName = station;
   appState.streamingUrl = url;
+  appState.radioCode = code;
   appState.radioPlaying = true;
   $("#radioFrame")[0].play()
+  console.log(appState)
+  if (appState.radioCode) {
+     $("#countrySelect").val(appState.radioCode).change()
+  }
  
   
 }
@@ -398,7 +398,7 @@ var trashBtn = L.easyButton("fa-trash", function (btn){
 function makePresetButton({icon, name}) {
   const btn = L.easyButton(icon, (btn) => {
     if (appState.saving) {
-      let preset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl)
+      let preset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl, appState.radioCode)
       preset = JSON.stringify(preset)
       localStorage.setItem(name, preset);
       appState.saving = false
@@ -433,25 +433,14 @@ var shareBtn = L.easyButton("fa-share-nodes", (btn) => {
   let params = {
     url: appState.streamingUrl,
     country: appState.radioLocation,
-    name: appState.radioName
+    name: appState.radioName,
+    code: appState.radioCode,
   }
   let shareableParams = new URLSearchParams(params)
   let link= `${window.location.origin}${window.location.pathname}?${shareableParams}`
   $("#shareText").val(`Listen to ${appState.radioName} from ${appState.radioLocation} on the World Radio Tuner: ${link}`)
   shareModal.show()
 })
-
-
-
-// var radioBtn = L.easyButton( "fa-radio", async function (btn, map) {
-//   if (appState.radioPlaying){
-//     stopRadio()
-//     return;
-//   }
-  
-//   playRadio(appState.selectedCountry.radio)
-  
-// });
 
 
 // ---------------------------------------------------------
@@ -470,7 +459,6 @@ $(document).ready( async function () {
     worldCopyJump: true 
   }).setView([20, 0], 2);
 
-  
 
    // initialise myCountry, selectedCountry and countrySelect based on location
   navigator.geolocation.getCurrentPosition( async (pos) => {
@@ -483,18 +471,14 @@ $(document).ready( async function () {
       randomCountry()
       appState.myCountry.countryCode = appState.selectedCountry.countryCode;
       appState.myCountry.name = appState.selectedCountry.name;
-      // await countryInfo(appState.myCountry.countryCode, appState.myCountry)
+    
       hidePreloader()
       return;
     } 
     
     
-
     appState.myCountry.countryCode = countryFromCoords['data']["country_code"].toUpperCase();
-    appState.myCountry.name = countryFromCoords['data']["name"];
-
-    // await countryInfo(appState.myCountry.countryCode, appState.myCountry)
-    
+    appState.myCountry.name = countryFromCoords['data']["name"];  
     
     // when ajax call complete copy myCountry into selectedCountry to initialise it if it's empty
     if (!appState.selectedCountry.name) {
@@ -507,14 +491,14 @@ $(document).ready( async function () {
     
     // first check if preset is shared in url , if so play that
     const params = new URLSearchParams(window.location.search);
-
     
     if(params.toString()) {
       
       appState.radioLocation = params.get("country");
       appState.streamingUrl = params.get("url");
-      appState.radioName = params.get("name")
-      let thisPreset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl)
+      appState.radioName = params.get("name");
+      appState.radioCode = params.get("code");
+      let thisPreset = new Preset(appState.radioLocation, appState.radioName, appState.streamingUrl, appState.radioCode)
       playPreset(thisPreset)
      
       return
@@ -559,7 +543,6 @@ $(document).ready( async function () {
   errorModal = new bootstrap.Modal(document.getElementById('errorModal'))
   shareModal = new bootstrap.Modal(document.getElementById("shareModal"))
   instructionsModal = new bootstrap.Modal(document.getElementById("instructionsModal"))
-
 
   // populate country select
   $('#countrySelect').empty();
