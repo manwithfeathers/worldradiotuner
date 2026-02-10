@@ -174,49 +174,24 @@ async function randomCountry() {
   $("#countrySelect").val(countryCode).change()
 }
 
-const countryInfo = async (countryCode = appState.selectedCountry.countryCode, target = appState.selectedCountry) => {
-  let result = await ajaxCaller("libs/php/getCountryInfo.php", { name: countryCode})
-	// populate the country info in appState. Handle edge cases first.
-  if (!result) return false
-  if (!result["data"]) {
-    target.population = null;
-    target.capital = null;
-    target.area = null;
-    target.currencyCode = null; 
-    } else {
-    target.population = result['data'][0]['population']
-    target.capital = result['data'][0]['capital']
-    target.area = result['data'][0]['areaInSqKm']
-    target.currencyCode = result["data"][0]["currencyCode"]
-    return true
-    }
-  }
-
-
-
-
-  
-
-// async function audioPlayer(attempts = 0){
-//   if (appState.selectedCountry.radio.length === 0) {
-//     return
+// const countryInfo = async (countryCode = appState.selectedCountry.countryCode, target = appState.selectedCountry) => {
+//   let result = await ajaxCaller("libs/php/getCountryInfo.php", { name: countryCode})
+// 	// populate the country info in appState. Handle edge cases first.
+//   if (!result) return false
+//   if (!result["data"]) {
+//     target.population = null;
+//     target.capital = null;
+//     target.area = null;
+//     target.currencyCode = null; 
+//     } else {
+//     target.population = result['data'][0]['population']
+//     target.capital = result['data'][0]['capital']
+//     target.area = result['data'][0]['areaInSqKm']
+//     target.currencyCode = result["data"][0]["currencyCode"]
+//     return true
+//     }
 //   }
 
-//   if (attempts > 6){
-//     return
-//   }
-//   audio.src = appState.streamingUrl
-//   audio.load()
-//   audio.play().catch(() => {})
-//   setTimeout(()=> {
-//     if (audio.readyState < 3)
-//       {
-//         stationPicker(appState.selectedCountry.radio)
-//         audioPlayer(attempts + 1)
-//       }
-//   }, 500)
-  
-// }
 
 let audio = document.getElementById("radioFrame")
 
@@ -231,29 +206,56 @@ function stationPicker(stationArray){
 
 const canPlay = (streamingUrl) => {
   return new Promise((resolve, reject)=> {
+    // security to guard against race conditions
+    let settled = false;
+    audio.pause()
+    audio.src = ""
+    audio.load()
     
     audio.src = streamingUrl;
     audio.load()
 
     const timer = setTimeout(() => {
       reject()
-    }, 500)
+    }, 1500)
 
-    audio.addEventListener("canplay", () => {
+    const cleanUp = () => {
       clearTimeout(timer)
-      resolve();
-    }, { once: true })
+      audio.removeEventListener('canplay', onSuccess)
+      
+      audio.removeEventListener('playing', onSuccess)
+      audio.removeEventListener('stalled', onFailure)
+      audio.removeEventListener('suspend', onFailure)
 
-    audio.addEventListener("error", ()=> {
-      clearTimeout(timer)
-      reject();
-    }, { once: true })
+      audio.removeEventListener('error', onFailure)
+    }
+
+    const onSuccess = () => {
+      if (settled) return;
+      settled = true;
+        cleanUp()
+        resolve();
+    }
+
+    const onFailure = () => {
+      if (settled) return;
+      settled = true;
+      cleanUp()
+      reject()
+    }
+
+    audio.addEventListener("canplay", onSuccess, { once: true })
+    audio.addEventListener("playing", onSuccess, { once: true })
+    audio.addEventListener("error", onFailure, { once: true })
+    audio.addEventListener("stalled", onFailure, { once: true })
+    audio.addEventListener("suspend", onFailure, { once: true })
+
   })
 }
 
-async function stationPlayer() {
+async function stationPlayer(attempts=20) {
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < attempts; i++) {
     try {
       await canPlay(appState.streamingUrl)
       await audio.play()
@@ -367,7 +369,7 @@ $('#countrySelect').on('change', async function() {
   maxZoom: 5,
   padding: [50,50],
 });
-  await countryInfo(countryId)
+  // await countryInfo(countryId)
   hidePreloader()
   
  
@@ -486,7 +488,7 @@ $(document).ready( async function () {
       randomCountry()
       appState.myCountry.countryCode = appState.selectedCountry.countryCode;
       appState.myCountry.name = appState.selectedCountry.name;
-      await countryInfo(appState.myCountry.countryCode, appState.myCountry)
+      // await countryInfo(appState.myCountry.countryCode, appState.myCountry)
       hidePreloader()
       return;
     } 
@@ -496,7 +498,7 @@ $(document).ready( async function () {
     appState.myCountry.countryCode = countryFromCoords['data']["country_code"].toUpperCase();
     appState.myCountry.name = countryFromCoords['data']["name"];
 
-    await countryInfo(appState.myCountry.countryCode, appState.myCountry)
+    // await countryInfo(appState.myCountry.countryCode, appState.myCountry)
     
     
     // when ajax call complete copy myCountry into selectedCountry to initialise it if it's empty
@@ -536,7 +538,7 @@ $(document).ready( async function () {
     randomCountry()
       appState.myCountry.countryCode = appState.selectedCountry.countryCode;
       appState.myCountry.name = appState.selectedCountry.name;
-      countryInfo(appState.myCountry.countryCode, appState.myCountry)
+      // countryInfo(appState.myCountry.countryCode, appState.myCountry)
       hidePreloader()
       return;
   }, {
@@ -583,13 +585,11 @@ $(document).ready( async function () {
     stationPicker(appState.selectedCountry.radio)
     await stationPlayer()
     
-      
     $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
-    // placeStation()
- 
+   
     appState.radioPlaying = true;
 
-    
+  
   })
   
 
