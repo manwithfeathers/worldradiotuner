@@ -245,13 +245,14 @@ async function stationPlayer(attempts=20) {
     try {
       await canPlay(appState.streamingUrl)
       await audio.play()
-      break;
+      return true;
     } catch {
       
       stationPicker(appState.selectedCountry.radio) 
     }
   }
     showError({responseText: "No stations available for this country right now, please select another country"})
+    return false;
 }
 
 
@@ -561,6 +562,7 @@ $(document).ready( async function () {
 
 
   // populate country select
+  $('#countrySelect').empty();
   let rawCountries = await ajaxCaller("libs/php/populateCountrySelect.php", {})
   let countries = rawCountries["data"]
 
@@ -570,18 +572,32 @@ $(document).ready( async function () {
   
 
   $("#scanBtn").on("click", async () => {
+
+    if ($("#scanBtn").prop("disabled")) return;
+
+    $("#scanBtn").prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i>');
     if (appState.radioLocation !== appState.selectedCountry.name || !appState.selectedCountry.radio) {
       let result = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
-      if (!result) return;
+
+      if (!result) {
+         $("#scanBtn").prop("disabled", false).html("Scan");
+         return
+        
+      };
       appState.selectedCountry.radio = result["data"]
       appState.radioLocation = appState.selectedCountry.name;
     }
     stationPicker(appState.selectedCountry.radio)
-    await stationPlayer()
+    const playing = await stationPlayer()
+
+    if (playing) {
     
     $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.selectedCountry.name}`)
-   
     appState.radioPlaying = true;
+    }
+   
+    
+    $("#scanBtn").prop("disabled", false).html("Scan");
 
   
   })
