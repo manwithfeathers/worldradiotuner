@@ -115,7 +115,7 @@ function copy() {
   document.execCommand("copy");
 }
 
-async function randomCountry() {
+function strugglingToLocate() {
   Toastify({
   text: "Struggling to locate you. Picking a random country.",
   duration: 3000,
@@ -128,13 +128,14 @@ async function randomCountry() {
     background: 'grey'
   } 
 }).showToast();
+}
 
+async function randomCountry() {
   let rawCountries = await ajaxCaller("libs/php/populateCountrySelect.php", {})
   let countries = rawCountries["data"]
   let countryCodes = Object.values(countries)
   let countryCode = countryCodes[Math.floor(Math.random() * countryCodes.length)]
    appState.myCountry.countryCode = countryCode;
-  
   $("#countrySelect").val(countryCode).change()
 }
 
@@ -143,15 +144,26 @@ let trashBtnAccess;
 
 let audio = document.getElementById("radioFrame")
 
-function stationPicker(stationArray){
- 
-  if (stationArray.length !== 0) {
-  let x = Math.floor(Math.random() * stationArray.length)
-  appState.streamingUrl = stationArray[x]['url'];
-  appState.radioName = stationArray[x]['name'];
-  appState.radioLat = stationArray[x]['geo_lat']
-  appState.radioLng = stationArray[x]['geo_long']
-  appState.radioCode = stationArray[x]["countrycode"]
+async function stationPicker(){
+
+  if (!appState.selectedCountry.radio || appState.radioLocation !== appState.selectedCountry.name) {
+    let radios = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
+    if (!radios) {
+      showError({responseText: "No stations available for this country right now, please select another country"})
+      return
+    };
+    appState.selectedCountry.radio = radios["data"]
+  }
+
+
+  if (appState.selectedCountry.radio.length !== 0) {
+  let x = Math.floor(Math.random() * appState.selectedCountry.radio.length)
+  appState.streamingUrl = appState.selectedCountry.radio[x]['url'];
+  appState.radioName = appState.selectedCountry.radio[x]['name'];
+  appState.radioLat = appState.selectedCountry.radio[x]['geo_lat']
+  appState.radioLng = appState.selectedCountry.radio[x]['geo_long']
+  appState.radioCode = appState.selectedCountry.radio[x]["countrycode"]
+  appState.radioLocation = appState.selectedCountry.radio[x]["country"]
   } else {
     showError({responseText: "No stations available for this country right now, please select another country"})
   }
@@ -216,7 +228,7 @@ async function stationPlayer(attempts=20) {
       return true;
     } catch {
       
-      stationPicker(appState.selectedCountry.radio) 
+      await stationPicker() 
     }
   }
     showError({responseText: "No stations available for this country right now, please select another country"})
@@ -225,7 +237,7 @@ async function stationPlayer(attempts=20) {
 
 
 function placeStation() {
-  console.log(appState.radioLat, appState.radioLng)
+  
   
   if (appState.radioLat && appState.radioLng) {   
     L.popup()
@@ -235,38 +247,6 @@ function placeStation() {
      
   }
 }
-
-// async function playRadio(stationArray) {
-//   // filter out stations that force download and don't stream well in iframe
-//   let filteredArray = stationArray.filter(station => !station.url.includes("m3u"))
-
-// if (filteredArray.length !== 0) {
-
-//   stationPicker(filteredArray)
-// } else {
-//     showError({responseText: "No stations available for this country right now, please select another country"})
-//     return
-//   }
-  
-//   let playing = await stationPlayer() 
-
-//   if (!playing) {
-//     showError({responseText: "No more stations available for this country right now, please select another country"})
-//     return
-//   }
-//   placeStation()
-  
-//   $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.radioLocation}`)
- 
-//   appState.radioPlaying = true;
-// }
-
-// function stopRadio () {
-//   $("#radioFrame")[0].pause()
-//   $("#radioPlayer").addClass("d-none")
-//   appState.radioPlaying = false;
-// }
-
 
 
 function playPreset(preset) {
@@ -345,11 +325,28 @@ var instructionsBtn = L.easyButton({
   }]
 });
 
+var randomBtn = L.easyButton({
+  position: "topright",
+  states: [{
+    icon: "fa-shuffle",
+    onClick: async () => {
+      await randomCountry()
+      await stationPicker()
+      const playing = await stationPlayer()
+    if (playing) {
+      $("#radioInfo").html(`Listen to ${appState.radioName} from ${appState.radioLocation}`)
+      appState.radioPlaying = true;
+    }
+    // placeStation()
+
+    }
+  }]
+});
+
  
 var homeBtn = L.easyButton( "fa-home", function (btn, map) {
   $("#countrySelect").val(appState.myCountry.countryCode).change()
 });
-
 
 
 var saveBtn = L.easyButton("fa-floppy-disk", function (btn) {
@@ -357,7 +354,6 @@ var saveBtn = L.easyButton("fa-floppy-disk", function (btn) {
   appState.saving = !appState.saving
   appState.saving ? saveBtnAccess.classList.add("active") : saveBtnAccess.classList.remove("active") 
 })
-
 
 
 var trashBtn = L.easyButton("fa-trash", function (btn){
@@ -430,6 +426,16 @@ $(document).ready( async function () {
     worldCopyJump: true 
   }).setView([20, 0], 2);
 
+  // populate country select
+  $('#countrySelect').empty();
+  let rawCountries = await ajaxCaller("libs/php/populateCountrySelect.php", {})
+  let countries = rawCountries["data"]
+
+  		for (let key in countries) {
+        $('#countrySelect').append('<option value="' + countries[key] + '">' + key + '</option>')
+      }  
+  
+
 
    // initialise myCountry, selectedCountry and countrySelect based on location
   navigator.geolocation.getCurrentPosition( async (pos) => {
@@ -440,23 +446,23 @@ $(document).ready( async function () {
     let countryFromCoords= await ajaxCaller("libs/php/getCountryFromCoords.php", {lat: lat, lng: lng})
     if (!countryFromCoords || !countryFromCoords["data"] ){
       randomCountry()
+      strugglingToLocate()
       appState.myCountry.countryCode = appState.selectedCountry.countryCode;
       appState.myCountry.name = appState.selectedCountry.name;
     
       hidePreloader()
       return;
-    } 
+  } 
     
 
     appState.myCountry.countryCode = countryFromCoords['data']["country_code"].toUpperCase();
     appState.myCountry.name = countryFromCoords['data']["name"];  
     
     // when ajax call complete copy myCountry into selectedCountry to initialise it if it's empty
-    if (!appState.selectedCountry.name) {
-      appState.selectedCountry.name = appState.myCountry.name;
-      appState.selectedCountry.countryCode = appState.myCountry.countryCode;
-      appState.selectedCountry.currencyCode = appState.myCountry.currencyCode
-    }
+    
+    appState.selectedCountry.name = appState.myCountry.name;
+    appState.selectedCountry.countryCode = appState.myCountry.countryCode;
+    
   
     $("#countrySelect").val(appState.myCountry.countryCode).change();
     
@@ -475,24 +481,15 @@ $(document).ready( async function () {
       return
       } 
     
-    let radios = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
-  
-    if (!radios) return;
    
-    appState.selectedCountry.radio = radios["data"]
-    appState.radioLocation = appState.selectedCountry.name;
-    await stationPicker()
-    await stationPlayer()
-    placeStation()
-    
-  
+      
   }, (error) => {
     randomCountry()
-      appState.myCountry.countryCode = appState.selectedCountry.countryCode;
-      appState.myCountry.name = appState.selectedCountry.name;
-      // countryInfo(appState.myCountry.countryCode, appState.myCountry)
-      hidePreloader()
-      return;
+    strugglingToLocate()
+    appState.myCountry.countryCode = appState.selectedCountry.countryCode;
+    appState.myCountry.name = appState.selectedCountry.name;
+    hidePreloader()
+    return;
   }, {
   enableHighAccuracy: false,
   timeout: 3000,
@@ -503,6 +500,7 @@ $(document).ready( async function () {
  	
   instructionsBtn.addTo(map)
   homeBtn.addTo(map)
+  randomBtn.addTo(map)
  
 
   makePresetButton({icon:"fa-1", name: "preset1"})
@@ -517,14 +515,6 @@ $(document).ready( async function () {
   shareModal = new bootstrap.Modal(document.getElementById("shareModal"))
   instructionsModal = new bootstrap.Modal(document.getElementById("instructionsModal"))
 
-  // populate country select
-  $('#countrySelect').empty();
-  let rawCountries = await ajaxCaller("libs/php/populateCountrySelect.php", {})
-  let countries = rawCountries["data"]
-
-  		for (let key in countries) {
-        $('#countrySelect').append('<option value="' + countries[key] + '">' + key + '</option>')
-      }  
   
 
   $("#scanBtn").on("click", async () => {
@@ -532,18 +522,8 @@ $(document).ready( async function () {
     if ($("#scanBtn").prop("disabled")) return;
 
     $("#scanBtn").prop("disabled", true).html('<i class="fa fa-spinner fa-spin"></i>');
-    if (appState.radioLocation !== appState.selectedCountry.name || !appState.selectedCountry.radio) {
-      let result = await ajaxCaller("libs/php/getRadio.php", {name: appState.selectedCountry.countryCode})
-
-      if (!result) {
-         $("#scanBtn").prop("disabled", false).html("Scan");
-         return
-        
-      };
-      appState.selectedCountry.radio = result["data"]
-      appState.radioLocation = appState.selectedCountry.name;
-    }
-    stationPicker(appState.selectedCountry.radio)
+    
+    await stationPicker()
     const playing = await stationPlayer()
 
     if (playing) {

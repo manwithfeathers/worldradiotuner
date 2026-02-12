@@ -41,6 +41,7 @@
         $output['data'][$i]["url"] = $response['data'][$i]["url"];
         $output['data'][$i]["countrycode"] = $response['data'][$i]["countrycode"];
         $output['data'][$i]["name"] = $response['data'][$i]["name"];
+        $output['data'][$i]["country"] = $response['data'][$i]["country"];
 
         $output['data'][$i]["geo_lat"] = $response['data'][$i]["geo_lat"];
         $output['data'][$i]["geo_long"] = $response['data'][$i]["geo_long"];
