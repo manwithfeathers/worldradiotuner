@@ -1,7 +1,7 @@
 # World Radio Tuner
 A web app that lets you explore and listen to live radio stations from around the world, visualised on an interactive map.
 
-Live demo
+[Live demo](https://adamdparkinson.co.uk/radio)
 
 ## Features
 
