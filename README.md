@@ -23,10 +23,12 @@ PHPRadio, Radio Browser API
 ## How to run
 
 This project requires a PHP server. Clone the repo and serve it from a local PHP environment such as XAMPP
+
 `
 bashgit clone https://github.com/yourusername/world-radio-tuner
 `
-Then open in your browser via your local server.
+
+It should then run on your local server
 
 ## Built with
 Leaflet.js · jQuery · Bootstrap · Toastify · PHP · Radio Browser API
