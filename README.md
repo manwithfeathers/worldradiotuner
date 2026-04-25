@@ -23,8 +23,9 @@ PHPRadio, Radio Browser API
 ## How to run
 
 This project requires a PHP server. Clone the repo and serve it from a local PHP environment such as XAMPP.
-
-```bash git clone https://github.com/yourusername/world-radio-tuner```
+```
+  bash git clone https://github.com/yourusername/world-radio-tuner
+```
 
 It should then run on your local server
 
