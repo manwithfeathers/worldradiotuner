@@ -6,9 +6,9 @@ var map;
 
 class Preset {
   constructor (country, station, url, code) {
-    this.country = country,
-    this.station = station,
-    this.url = url,
+    this.country = country;
+    this.station = station;
+    this.url = url;
     this.code = code
   }
 }
@@ -21,6 +21,7 @@ const appState = {
     geoJSON: null,
     radio: null
   },
+
   myCountry: {
     name: null,
     countryCode: null,
@@ -43,8 +44,6 @@ const appState = {
   deleting: false,
   presetButtons: {}
 }
-
-
 
 const geojsonStyling = {
     fillColor: "#fff",
@@ -260,7 +259,7 @@ function playPreset(preset) {
   appState.radioCode = code;
   appState.radioPlaying = true;
   $("#radioFrame")[0].play()
-  console.log(appState)
+ 
   if (appState.radioCode) {
      $("#countrySelect").val(appState.radioCode).change()
   }
