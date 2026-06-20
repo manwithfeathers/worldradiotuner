@@ -181,7 +181,7 @@ const canPlay = (streamingUrl) => {
     audio.load()
 
     const timer = setTimeout(() => {
-      reject()
+      onFailure()
     }, 1500)
 
     const cleanUp = () => {
